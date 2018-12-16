@@ -1,22 +1,43 @@
 import * as fs from 'fs';
+import ErrnoException = NodeJS.ErrnoException;
 
-const convertTo = (input: string, encoding: number): string => {
-  return input.split('').reduce((result, currentChar) => {
-    return result + currentChar.charCodeAt(0).toString(encoding) + ' ';
-  }, '');
+const convertTo = (input: string, encoding: number): number[] => {
+  return input
+    .split('')
+    .reduce(
+      (result, currentChar) => [
+        ...result,
+        (encoding === 2 ? '0b' : '') +
+          currentChar.charCodeAt(0).toString(encoding),
+      ],
+      [],
+    );
 };
 
-const xor = (value: string, value1: string): string => {
-  return value1.split('').reduce((result, current, index) => {
-    return result + (value[index] ^ current);
-  }, '');
+const convertBitsToString = (input: number[]): string[] => {
+  return input.map((item) => String.fromCharCode(item));
 };
 
-const handleFile: Function = (err, data: Buffer) => {
+const xor = (value: number[], value1: number[]): number[] => {
+  return value1.map((char, index) => value[index] ^ char);
+};
+
+const handleFile: (err: ErrnoException, data: Buffer) => void = (
+  err: ErrnoException,
+  data: Buffer,
+): void => {
   const fileContent: string = data.toString();
-  const binary: string = convertTo(fileContent, 2);
-  const notWord: string = convertTo(' nie ', 2);
-  console.log(convertTo(xor(binary, notWord), 10));
+  let binary: number[] = convertTo(fileContent, 2);
+  const binaryLength: number = binary.reduce(
+    (result, item) => result + item.toString(2).length,
+    0,
+  );
+  const notWord: number[] = convertTo(' nie ', 2);
+
+  for (let i = 0; i <= 100; i++) {
+    binary = convertTo(fileContent << 1, 2);
+    console.log(convertBitsToString(xor(binary, notWord)).join(''));
+  }
 };
 
 fs.readFile('code.xor', handleFile);
